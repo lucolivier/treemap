@@ -1,0 +1,59 @@
+#!/bin/bash
+
+function usage {
+	#$1 message
+	echo $1
+	echo "$(basename $0) path_to_tree destination_file"
+	exit 0
+}
+
+function errExit {
+	#$1 message
+	echo "$1. Exiting"
+	exit 1
+}
+
+[ ! $1 ] && usage "Missing path to tree."
+[ ! $2 ] && usage "Missing destination file path!"
+
+root="$1"
+[ ! -d "$root" ] && errExit "Path to tree does not exist!"
+rootSPC=$(echo "$1" | sed 's/ /%SPC%/g')
+
+basecat="$2"
+
+#tmpdir="/var/tmp/treemap/"
+#mkdir -p $tmpdir
+#basecat=${tmpdir}basecat
+
+echo "" >$basecat
+
+function directoryListing {
+	#1 path
+	local node_
+	local item_
+	local path_
+	path_=$(echo "$1" | sed -e 's/%SPC%/ /g' -e 's/\/$//')
+	#echo ">> $path_"
+	for item_ in $(ls -F "$path_" | sed 's/ /%SPC%/g' | sed -e '/@$/d' -e '/\*$/d' -e '/\=$/d'); do
+		node_=$(echo "$item_" | sed -e 's/%SPC%/ /g' -e 's/\/$//')
+ 		ls -lad "$path_/$node_" >>"$basecat"
+ 		if [ "$(echo $item_ | sed '/\/$/!d')" ]; then
+ 			#echo "-----+"
+ 			directoryListing "$1$item_"
+ 		fi
+ 	done
+}
+
+for item in $(ls -F "$1" | sed 's/ /%SPC%/g' | sed -e '/Volumes/d' -e '/Network/d' -e '/@$/d' -e '/\*$/d' -e '/\=$/d'); do
+	node=${rootSPC}/$(echo "$item" | sed -e 's/%SPC%/ /g' -e 's/\/$//')
+	echo "> $node"
+	ls -lad "$node" >>"$basecat"
+	if [ "$(echo $item | sed '/\/$/!d')" ]; then
+		directoryListing "${rootSPC}/$item"
+		#echo "#>>/$item"
+	fi
+done
+
+
+
