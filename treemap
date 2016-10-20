@@ -1,9 +1,11 @@
 #!/bin/bash
+# TREEMAP
 
 function usage {
 	#$1 message
 	echo $1
-	echo "$(basename $0) path_to_tree destination_file"
+	echo "$(basename $0) path_to_tree levels_amount destination_file"
+	echo "        level amount: set to - for no limitation"
 	exit 0
 }
 
@@ -13,26 +15,33 @@ function errExit {
 	exit 1
 }
 
-[ ! $1 ] && usage "Missing path to tree."
-[ ! $2 ] && usage "Missing destination file path!"
+[ ! "$1" ] && usage "Missing path to tree."
+[ ! $2 ] && usage "Missing levels amount"
+[ ! "$3" ] && usage "Missing destination file path!"
 
 root="$1"
 [ ! -d "$root" ] && errExit "Path to tree does not exist!"
-rootSPC=$(echo "$1" | sed 's/ /%SPC%/g')
+rootSPC=$(echo "$1" | sed 's/ /%SPC%/g' | sed 's/\/$//') #; echo ">$rootSPC<"
 
-basecat="$2"
+maxdepth="$2"
+[ $(echo "$maxdepth" | sed '/[-0-9]/!d') ] || errExit "Wrong levels amount"
+
+basecat="$3"
 
 #tmpdir="/var/tmp/treemap/"
 #mkdir -p $tmpdir
 #basecat=${tmpdir}basecat
 
-echo "" >$basecat
+echo "" >"$basecat"
+
+depth=0
 
 function directoryListing {
 	#1 path
 	local node_
 	local item_
 	local path_
+	let depth=$depth+1 ; echo $depth
 	path_=$(echo "$1" | sed -e 's/%SPC%/ /g' -e 's/\/$//')
 	#echo ">> $path_"
 	for item_ in $(ls -F "$path_" | sed 's/ /%SPC%/g' | sed -e '/@$/d' -e '/\*$/d' -e '/\=$/d'); do
@@ -40,13 +49,18 @@ function directoryListing {
  		ls -lad "$path_/$node_" >>"$basecat"
  		if [ "$(echo $item_ | sed '/\/$/!d')" ]; then
  			#echo "-----+"
- 			directoryListing "$1$item_"
+ 			if [ "$maxdepth" == '-' ] || [ $depth -lt $maxdepth ]; then
+ 				directoryListing "$1$item_"
+ 			fi
  		fi
  	done
+ 	let depth=$depth-1
 }
 
 for item in $(ls -F "$1" | sed 's/ /%SPC%/g' | sed -e '/Volumes/d' -e '/Network/d' -e '/@$/d' -e '/\*$/d' -e '/\=$/d'); do
-	node=${rootSPC}/$(echo "$item" | sed -e 's/%SPC%/ /g' -e 's/\/$//')
+	#echo $deepth
+	#node=${rootSPC}/$(echo "$item" | sed -e 's/%SPC%/ /g' -e 's/\/$//')
+	node=$(echo "${rootSPC}/$item" | sed -e 's/%SPC%/ /g' -e 's/\/$//')
 	echo "> $node"
 	ls -lad "$node" >>"$basecat"
 	if [ "$(echo $item | sed '/\/$/!d')" ]; then
