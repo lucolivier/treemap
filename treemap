@@ -1,5 +1,7 @@
 #!/bin/bash
+#
 # TREEMAP
+#
 
 function usage {
 	#$1 message
@@ -41,7 +43,7 @@ function directoryListing {
 	local node_
 	local item_
 	local path_
-	let depth=$depth+1 ; echo $depth
+	let depth=$depth+1 #; echo $depth
 	path_=$(echo "$1" | sed -e 's/%SPC%/ /g' -e 's/\/$//')
 	#echo ">> $path_"
 	for item_ in $(ls -F "$path_" | sed 's/ /%SPC%/g' | sed -e '/@$/d' -e '/\*$/d' -e '/\=$/d'); do
